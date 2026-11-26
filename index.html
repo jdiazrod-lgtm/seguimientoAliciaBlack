@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adherencia Black Friday</title>
+<script>
+/* tema: auto / claro / oscuro (se aplica antes de pintar) */
+(function(){
+  var p='light';try{p=localStorage.getItem('adh-bf-theme')||'light';}catch(e){}
+  var dark=p==='dark'||(p==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme=dark?'dark':'light';
+})();
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#e6e9ef; --surface:#f5f7fa; --ink:#141a2e; --ink2:#5a647b; --grid:#d3d9e4; --axis:#aeb7c8;
+  --border:rgba(20,26,46,.12); --wash:rgba(20,26,46,.05);
+  --accent:#2554c7; --on-accent:#ffffff; --band:rgba(37,84,199,.10);
+  --s-cad:#141a2e; --s-tda:#2554c7; --s-pro:#7886a0; --s-cd:#8ab8f8;
+  --on-tda:#ffffff; --on-pro:#ffffff; --on-cd:#141a2e;
+  --good:#0aac23; --warn:#fbb315; --serious:#f18a59; --crit:#dc3c3d;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1233; --surface:#161b47; --ink:#eceeff; --ink2:#a0a7d6; --grid:#262d6b; --axis:#3a438f;
+  --border:rgba(160,167,214,.20); --wash:rgba(255,255,255,.06);
+  --accent:#6d93ff; --on-accent:#0e1233; --band:rgba(109,147,255,.15);
+  --s-cad:#eceeff; --s-tda:#3868f0; --s-pro:#9aa3c4; --s-cd:#c6dcff;
+  --on-tda:#ffffff; --on-pro:#0e1233; --on-cd:#0e1233;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1360px;margin:0 auto;padding:22px 20px 60px}
+h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.3px}
+h2{font-size:14px;margin:0 0 2px;font-weight:650}
+.sub{color:var(--ink2);font-size:12.5px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 11px;cursor:pointer}
+button:hover{background:var(--wash)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+button.primary:hover{filter:brightness(1.08);background:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
+.params{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.params label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink2)}
+.params input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 8px;width:130px}
+.params input.sm{width:78px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.kpis{display:grid;grid-template-columns:minmax(270px,1.4fr) repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis .hero{grid-column:1/-1}}
+.wait .btns,.wait .params,.wait #tbl{pointer-events:none;opacity:.55}
+.sync{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:99px;background:var(--wash);border:1px solid var(--border);color:var(--ink2)}
+.sync i{font-style:normal}
+.sync.ok i{color:var(--good)} .sync.err i{color:var(--warn)}
+.nodes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+@media (max-width:800px){.nodes{grid-template-columns:1fr}}
+.pct{font-size:32px;font-weight:700;letter-spacing:-.8px;line-height:1.1}
+.pct small{font-size:18px;font-weight:600;letter-spacing:0}
+.nodes .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.grid{display:grid;grid-template-columns:minmax(380px,470px) 1fr;gap:14px;align-items:start}
+@media (max-width:1000px){.grid{grid-template-columns:1fr}}
+.hero .big{font-size:52px;font-weight:700;letter-spacing:-1.5px;line-height:1.05}
+.hero .big small{font-size:26px;font-weight:600;letter-spacing:0}
+.tile .v{font-size:24px;font-weight:650;margin-top:4px}
+.tile .l{font-size:12px;color:var(--ink2)}
+.tile .s{font-size:12px;color:var(--ink2);margin-top:2px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--wash);border:1px solid var(--border);white-space:nowrap}
+.chip i{font-style:normal;font-weight:800}
+.st-ok i{color:var(--good)} .st-warn i{color:var(--warn)} .st-crit i{color:var(--crit)} .st-high i{color:var(--serious)}
+.meter{position:relative;height:16px;border-radius:8px;background:var(--wash);border:1px solid var(--border);margin:14px 0 4px;overflow:hidden}
+.meter .band{position:absolute;top:0;bottom:0;background:var(--band);border-left:1px solid var(--accent);border-right:1px solid var(--accent)}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;border-radius:0 6px 6px 0}
+.meterax{display:flex;justify-content:space-between;font-size:11px;color:var(--ink2)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 4px;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.charts{display:flex;flex-direction:column;gap:14px}
+svg{display:block;width:100%;overflow:visible}
+svg text{font:11.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink2)}
+svg text.val{fill:var(--ink);font-weight:600}
+svg text.band{fill:var(--accent);font-weight:600}
+/* tabla */
+table{width:100%;border-collapse:collapse}
+th,td{padding:4px 4px;text-align:left;vertical-align:middle}
+thead th{font-size:11.5px;font-weight:600;color:var(--ink2);border-bottom:1px solid var(--border);padding-bottom:6px}
+tbody tr.nodo td{padding-top:12px;border-top:1px solid var(--border)}
+tbody tr.nodo:first-child td{border-top:0}
+.nm{font-weight:650;white-space:nowrap}
+.nm .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px}
+.nm small{font-weight:500;color:var(--ink2);font-size:11.5px;margin-left:4px}
+td input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid transparent;border-radius:6px;padding:5px 7px;width:100%;text-align:right;font-variant-numeric:tabular-nums}
+td input[type=text]:hover{border-color:var(--border)}
+td input[type=text]:focus{background:var(--surface);border-color:var(--accent)}
+td.ro{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);padding-right:8px;white-space:nowrap}
+td.ro b{color:var(--ink);font-weight:650}
+td.adh{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:650;font-size:13px}
+td.adh .mini{display:block;font-size:11px;font-weight:500;color:var(--ink2)}
+tr.off .nm,tr.off input{opacity:.55}
+.cortes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.x{padding:0 5px;border:0;background:transparent;color:var(--ink2);border-radius:5px}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--axis);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 18px rgba(0,0,0,.28);display:none;max-width:270px}
+.tip b{font-weight:650}
+.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.empty{color:var(--ink2);font-size:12.5px;padding:26px 8px;text-align:center}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 14px;border-radius:8px;font-size:13px;display:none;z-index:60}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <h1>Adherencia Black Friday · <span id="fechaTxt"></span></h1>
+      <div style="margin-top:6px"><span id="sync" class="sync"></span></div>
+      <div class="sub">Cuánto del pronóstico del día ya cayó. Cadena = Tienda + CD + Proveedor (el total se calcula solo).</div>
+    </div>
+    <div class="btns">
+      <button id="btnCorte" class="primary" title="Guarda cómo va ahora para ver la evolución del día">📌 Guardar corte</button>
+      <button id="btnCopy">Copiar resumen</button>
+      <button id="btnBlank" title="Borra el real y los cortes de este día y deja los pronósticos fijos">Reiniciar día</button>
+      <button id="btnTheme" title="Cambiar tema">Tema: auto</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="params">
+      <label>Día del pronóstico<input type="date" id="pFecha"></label>
+      <label>Hora del corte<input type="time" id="pHora"></label>
+      <label>Banda mínima %<input type="text" inputmode="decimal" id="pLo" class="sm"></label>
+      <label>Banda máxima %<input type="text" inputmode="decimal" id="pHi" class="sm"></label>
+      <div class="hint" style="max-width:430px">Consumo de adherencia = real acumulado ÷ pronóstico del día completo. La banda (95–110%) es la meta al cierre del día.</div>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="nodes" id="nodes"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Captura</h2>
+      <div class="sub" style="margin-bottom:8px">Escribe pronóstico y real acumulado de Tienda, CD y Proveedor. Cadena se suma sola.</div>
+      <table id="tbl"></table>
+    </div>
+
+    <div class="charts">
+      <div class="card">
+        <h2>Mezcla de la caída: pronóstico vs real</h2>
+        <div class="sub">Qué parte del total aporta cada nodo. Si cambia entre las dos barras, ahí se mueve la adherencia.</div>
+        <div class="legend" id="lgMix"></div>
+        <div id="chMix"></div>
+      </div>
+      <div class="card">
+        <h2>Cómo va avanzando el día</h2>
+        <div class="sub">Un punto por cada corte guardado.</div>
+        <div class="legend" id="lgTrend"></div>
+        <div id="chTrend"></div>
+        <div class="cortes" id="cortes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const NODES=[
+  {k:'Tienda',    css:'--s-tda',on:'--on-tda'},
+  {k:'CD',        css:'--s-cd', on:'--on-cd'},
+  {k:'Proveedor', css:'--s-pro',on:'--on-pro'}
+];
+const SER=[{k:'Cadena',css:'--s-cad',w:3},...NODES.map(n=>({k:n.k,css:n.css,w:2}))];
+/* ===== CONFIGURACIÓN =====
+   Para que todos vean lo mismo, pega aquí los datos de tu proyecto de Supabase.
+   Si los dejas vacíos, el dash funciona solo en el navegador de cada persona. */
+const SUPABASE_URL='https://xhetmxobteofrgwrktbi.supabase.co';   // ej: https://abcdxyz.supabase.co
+const SUPABASE_KEY='sb_publishable_6nCd_p567kkag4rsL2-R4w_wF5PmdFz';   // la llave "anon public"
+const SHARED=!!(SUPABASE_URL&&SUPABASE_KEY);
+const EVENT_DATE='2026-11-27';                        // Black Friday
+const PRON={tda:18203,cd:14158,pro:8351};             // pronóstico del día (de ALICIA)
+const KEY='adh-bf-v5-';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const nf=new Intl.NumberFormat('es-CO',{maximumFractionDigits:0});
+const pf=new Intl.NumberFormat('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1});
+const fmtN=v=>v==null?'—':nf.format(Math.round(v));
+const fmtP=v=>v==null?'—':pf.format(v)+'%';
+
+function nowHM(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function parseNum(s){
+  if(s==null) return null;
+  s=String(s).replace(/[\s% ]/g,'');
+  if(s==='') return null;
+  if(/^-?\d{1,3}([.,]\d{3})+$/.test(s)) s=s.replace(/[.,]/g,'');
+  else if(s.includes(',')&&s.includes('.')) s=s.replace(/\./g,'').replace(',','.');
+  else s=s.replace(',','.');
+  const n=parseFloat(s); return isFinite(n)?n:null;
+}
+
+/* ---------- estado ---------- */
+function blankState(){
+  return {fecha:EVENT_DATE,hora:nowHM(),lo:95,hi:110,rev:0,
+    tda:{pron:PRON.tda,real:null},cd:{pron:PRON.cd,real:null},pro:{pron:PRON.pro,real:null},cadenaPron:null,cortes:[]};
+}
+let state,C;
+function sane(s){
+  if(!(s.lo>0&&s.hi>s.lo)){s.lo=95;s.hi=110;}
+  return s;
+}
+function loadLocal(fecha){
+  try{const t=localStorage.getItem(KEY+fecha); if(t){const s=JSON.parse(t); if(s&&s.tda&&s.cd) return sane(s);}}catch(e){}
+  return null;
+}
+function save(){
+  try{localStorage.setItem(KEY+state.fecha,JSON.stringify(state));}catch(e){}
+  if(SHARED&&synced&&!applying) pushSoon();
+}
+
+/* ---------- compartido (Supabase por REST, sin librerías) ---------- */
+let applying=false,dirty=false,synced=!SHARED,saveT=null,lastUpd=null,syncState=SHARED?'conectando':'local';
+const HDR=SHARED?{apikey:SUPABASE_KEY,...(SUPABASE_KEY.startsWith('eyJ')?{Authorization:'Bearer '+SUPABASE_KEY}:{}),'Content-Type':'application/json'}:{};  // llave nueva (sb_publishable_…) o la anon antigua (eyJ…)
+const REST=SUPABASE_URL+'/rest/v1/adherencia';
+function getPath(p){const a=p.split('.');return a[0]==='cadenaPron'?state.cadenaPron:state[a[0]][a[1]];}
+function setSync(st){syncState=st;renderSync();}
+function renderSync(){
+  const el=$('#sync');if(!el)return;
+  const hm=lastUpd?new Date(lastUpd).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'';
+  const m={local:['○','Solo en este navegador'],conectando:['○','Conectando…'],ok:['●','En vivo · compartido'+(hm?' · últ. cambio '+hm:'')],err:['⚠','Sin conexión, reintentando']}[syncState];
+  el.innerHTML=`<i>${m[0]}</i> ${m[1]}`;el.className='sync '+syncState;
+  document.body.classList.toggle('wait',SHARED&&!synced);
+}
+function pushSoon(){dirty=true;setSync(syncState==='err'?'err':syncState);clearTimeout(saveT);saveT=setTimeout(push,500);}
+async function push(){
+  if(!SHARED)return;
+  state.rev=Date.now();
+  try{
+    const r=await fetch(REST+'?on_conflict=id',{method:'POST',headers:{...HDR,Prefer:'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify([{id:state.fecha,data:state,updated_at:new Date().toISOString()}])});
+    if(!r.ok) throw new Error(r.status);
+    dirty=false;lastUpd=new Date().toISOString();setSync('ok');
+  }catch(e){setSync('err');clearTimeout(saveT);saveT=setTimeout(push,4000);}
+}
+async function pull(){
+  if(!SHARED||dirty)return;
+  const day=state.fecha;
+  try{
+    const r=await fetch(REST+'?id=eq.'+encodeURIComponent(day)+'&select=data,updated_at',{headers:HDR});
+    if(!r.ok) throw new Error(r.status);
+    const rows=await r.json();
+    if(day!==state.fecha||dirty) return;
+    synced=true;setSync('ok');
+    if(!rows.length){pushSoon();return;}            // ese día aún no existe: se crea con los pronósticos fijos
+    const d=rows[0].data; lastUpd=rows[0].updated_at;
+    if((d.rev||0)>(state.rev||0)) applyRemote(d); else renderSync();
+  }catch(e){setSync('err');}
+}
+function applyRemote(d){
+  applying=true;
+  state=sane(Object.assign(blankState(),d,{fecha:state.fecha}));
+  syncInputs();update();applying=false;
+}
+function syncInputs(){
+  const f=document.activeElement;
+  document.querySelectorAll('#tbl input[data-p]').forEach(i=>{if(i!==f){const v=getPath(i.dataset.p);i.value=v==null?'':nf.format(v);}});
+  [['#pHora','hora'],['#pLo','lo'],['#pHi','hi']].forEach(([id,k])=>{const i=$(id);if(i!==f)i.value=state[k];});
+}
+
+/* ---------- cálculo ---------- */
+function calc(s){
+  const mk=(pron,real)=>{const has=pron>0&&real!=null;
+    return {pron,real,has,adh:has?real/pron*100:null,falta:has?Math.max(0,s.lo/100*pron-real):null};};
+  const Tienda=mk(s.tda.pron,s.tda.real),CD=mk(s.cd.pron,s.cd.real),Proveedor=mk(s.pro.pron,s.pro.real);
+  const nodes={Tienda,CD,Proveedor};
+  const cap=NODES.map(n=>nodes[n.k]).filter(x=>x.has);
+  const sumP=cap.reduce((a,x)=>a+x.pron,0),sumR=cap.reduce((a,x)=>a+x.real,0);
+  const cadPron=s.cadenaPron>0?s.cadenaPron:sumP;
+  const Cadena=cap.length?{...mk(cadPron,sumR),sumP}:{...mk(null,null),sumP:0};
+  nodes.Cadena=Cadena;
+  const arrived=cap.filter(x=>x.adh>=s.lo).length;
+  let low=null;NODES.forEach(n=>{const x=nodes[n.k];if(x.has&&(low==null||x.adh<low.adh))low={k:n.k,adh:x.adh};});
+  return {nodes,Cadena,nCap:cap.length,arrived,low};
+}
+function corteFrom(s,c){const o={hora:s.hora,Cadena:c.nodes.Cadena.adh};NODES.forEach(n=>o[n.k]=c.nodes[n.k].adh);return o;}
+
+/* ---------- KPIs ---------- */
+function faltaTxt(x){
+  if(!x||!x.has) return 'Captura pronóstico y real';
+  if(x.adh>state.hi) return 'Ya pasó la banda ('+nf.format(state.hi)+'%)';
+  if(x.adh>=state.lo) return 'Ya está en la banda';
+  return 'Faltan '+fmtN(x.falta)+' notas para llegar al '+nf.format(state.lo)+'%';
+}
+function meter(pct,fill){
+  const s=state,maxAx=120,w=pct==null?0:Math.min(pct,maxAx)/maxAx*100;
+  const lo=Math.min(s.lo,maxAx)/maxAx*100,hi=Math.min(s.hi,maxAx)/maxAx*100;
+  return `<div class="meter" aria-hidden="true"><div class="band" style="left:${lo}%;width:${hi-lo}%"></div><div class="fill" style="width:${w}%;background:var(${fill})"></div></div>
+    <div class="meterax"><span>0%</span><span>Banda ${nf.format(s.lo)}–${nf.format(s.hi)}%</span><span>${maxAx}%</span></div>`;
+}
+function renderKpis(c){
+  const s=state,t=c.Cadena;
+  $('#kpis').innerHTML=`
+  <div class="card hero">
+    <div class="sub">Vamos de consumo de adherencia (Cadena)</div>
+    <div class="big">${t.adh==null?'—':pf.format(t.adh)}<small>${t.adh==null?'':'%'}</small></div>
+    <div style="margin-top:6px"><span class="chip">${faltaTxt(t)}</span> <span class="sub">corte ${esc(s.hora)}</span></div>
+    ${meter(t.adh,'--s-cad')}
+  </div>
+  <div class="card tile"><div class="l">Pronóstico del día</div><div class="v">${fmtN(t.pron)}</div><div class="s">notas, total Cadena</div></div>
+  <div class="card tile"><div class="l">Real acumulado</div><div class="v">${fmtN(t.real)}</div><div class="s">${c.nCap} de 3 nodos capturados</div></div>
+  <div class="card tile"><div class="l">Faltan para el ${nf.format(s.lo)}%</div><div class="v">${fmtN(t.falta)}</div><div class="s">notas, piso de la banda</div></div>
+  <div class="card tile"><div class="l">Nodos que ya llegaron</div><div class="v">${c.arrived} de ${c.nCap}</div><div class="s">${c.low?'menor avance: '+c.low.k+' '+fmtP(c.low.adh):'—'}</div></div>`;
+}
+function renderNodes(c){
+  $('#nodes').innerHTML=NODES.map(n=>{const x=c.nodes[n.k];
+    return `<div class="card"><div class="hd"><b>${dot(n.css)}${n.k}</b><span class="pct">${x.adh==null?'—':pf.format(x.adh)}<small>${x.adh==null?'':'%'}</small></span></div>
+    <div class="sub">${x.has?'Real '+fmtN(x.real)+' de '+fmtN(x.pron):'Sin captura'}</div>
+    ${meter(x.adh,n.css)}
+    <div class="sub" style="margin-top:6px">${faltaTxt(x)}</div></div>`;}).join('');
+}
+
+function dot(css){return `<span class="dot" style="background:var(${css})"></span>`;}
+/* ---------- tabla de captura ---------- */
+function inp(path,val,ph){return `<input type="text" inputmode="decimal" data-p="${path}" value="${val==null?'':nf.format(val)}" placeholder="${ph||'0'}" aria-label="${path}">`;}
+function renderTable(){
+  const s=state;
+  let h=`<thead><tr><th>Nodo</th><th style="width:96px;text-align:right">Pronóstico</th><th style="width:96px;text-align:right">Real</th><th style="width:100px;text-align:right">Avance</th></tr></thead><tbody>`;
+  h+=`<tr class="nodo"><td class="nm">${dot('--s-cad')}Cadena<small>total</small></td>
+      <td><input type="text" inputmode="decimal" id="inCadPron" data-p="cadenaPron" value="${s.cadenaPron==null?'':nf.format(s.cadenaPron)}" placeholder="suma" title="Opcional: pronóstico propio de Cadena. Vacío = suma de nodos"></td>
+      <td class="ro" id="v-cad-real"></td><td class="adh" id="a-Cadena"></td></tr>`;
+  h+=`<tr class="nodo"><td class="nm">${dot('--s-tda')}Tienda</td><td>${inp('tda.pron',s.tda.pron)}</td><td>${inp('tda.real',s.tda.real)}</td><td class="adh" id="a-Tienda"></td></tr>`;
+  h+=`<tr class="nodo"><td class="nm">${dot('--s-cd')}CD</td><td>${inp('cd.pron',s.cd.pron)}</td><td>${inp('cd.real',s.cd.real)}</td><td class="adh" id="a-CD"></td></tr>`;
+  h+=`<tr class="nodo"><td class="nm">${dot('--s-pro')}Proveedor</td><td>${inp('pro.pron',s.pro.pron)}</td><td>${inp('pro.real',s.pro.real)}</td><td class="adh" id="a-Proveedor"></td></tr>`;
+  $('#tbl').innerHTML=h+'</tbody>';
+}
+function adhCell(x){return x&&x.has?`<span>${fmtP(x.adh)}</span>${x.falta>0?`<span class="mini">faltan ${fmtN(x.falta)}</span>`:''}`:'<span class="mini">sin dato</span>';}
+
+function updateTable(c){
+  const set=(id,html)=>{const e=document.getElementById(id);if(e)e.innerHTML=html;};
+  set('a-Cadena',adhCell(c.Cadena));set('a-Tienda',adhCell(c.nodes.Tienda));set('a-CD',adhCell(c.nodes.CD));set('a-Proveedor',adhCell(c.nodes.Proveedor));
+  set('v-cad-real',c.Cadena.has?`<b>${fmtN(c.Cadena.real)}</b>`:'—');
+  const ph=$('#inCadPron'); if(ph&&state.cadenaPron==null) ph.placeholder=c.Cadena.sumP?nf.format(c.Cadena.sumP):'suma';
+}
+
+/* ---------- gráficas ---------- */
+const tip=$('#tip');
+function showTip(ev,html){tip.innerHTML=html;tip.style.display='block';
+  const w=tip.offsetWidth,h=tip.offsetHeight;let x=ev.clientX+14,y=ev.clientY+14;
+  if(x+w>innerWidth-8)x=ev.clientX-w-14; if(y+h>innerHeight-8)y=ev.clientY-h-14; tip.style.left=x+'px';tip.style.top=y+'px';}
+function hideTip(){tip.style.display='none';}
+function tipRows(title,pairs,extra){
+  return `<b>${esc(title)}</b>`+pairs.map(p=>`<div class="r"><span style="color:var(--ink2)">${p[0]}</span><span>${p[1]}</span></div>`).join('')+(extra?`<div style="margin-top:4px">${extra}</div>`:'');
+}
+function renderMix(c){
+  const el=$('#chMix');
+  $('#lgMix').innerHTML=NODES.map(n=>`<span><i class="sw" style="background:var(${n.css})"></i>${n.k}</span>`).join('');
+  const cap=NODES.filter(n=>c.nodes[n.k].has);
+  if(!cap.length){el.innerHTML='<div class="empty">Captura pronóstico y real para ver la mezcla.</div>';return;}
+  const W=Math.max(300,el.clientWidth),L=80,R=8,bh=34,gap=14,top=6,H=top+2*bh+gap+6;
+  const rows=[['Pronóstico','pron'],['Real','real']];
+  let g='';
+  rows.forEach(([lbl,f],ri)=>{
+    const y=top+ri*(bh+gap),tot=cap.reduce((a,n)=>a+c.nodes[n.k][f],0);
+    g+=`<text x="${L-10}" y="${y+bh/2+4}" text-anchor="end" style="fill:var(--ink);font-weight:600">${lbl}</text>`;
+    let xx=L;const full=W-L-R;
+    cap.forEach(n=>{
+      const v=c.nodes[n.k][f],sh=tot>0?v/tot:0,w=sh*full,ww=Math.max(0,w-2);
+      const pct=pf.format(sh*100)+'%';
+      g+=`<g class="seg" data-n="${n.k}" data-f="${f}"><rect x="${xx}" y="${y}" width="${ww}" height="${bh}" rx="3" style="fill:var(${n.css})"/>`;
+      if(ww>64) g+=`<text x="${xx+ww/2}" y="${y+bh/2+4}" text-anchor="middle" style="fill:var(${n.on});font-weight:650">${pct}</text>`;
+      g+='</g>'; xx+=w;
+    });
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Mezcla de la caída por nodo">${g}</svg>`;
+  el.querySelectorAll('.seg').forEach(sg=>{
+    const n=sg.dataset.n,f=sg.dataset.f,tot=cap.reduce((a,k)=>a+c.nodes[k.k][f],0),v=c.nodes[n][f];
+    sg.addEventListener('mousemove',e=>showTip(e,tipRows(n+' · '+(f==='pron'?'pronóstico':'real'),[['Notas',fmtN(v)],['Participación',pf.format(v/tot*100)+'%']])));
+    sg.addEventListener('mouseleave',hideTip);
+  });
+}
+function renderTrend(){
+  const el=$('#chTrend'),s=state,cs=[...s.cortes].sort((a,b)=>a.hora.localeCompare(b.hora));
+  $('#lgTrend').innerHTML=SER.map(x=>`<span><i class="sw" style="background:var(${x.css})"></i>${x.k}</span>`).join('');
+  $('#cortes').innerHTML=cs.map(k=>`<span class="chip">${esc(k.hora)} · ${fmtP(k.Cadena)} <button class="x" data-delc="${esc(k.hora)}" title="Quitar corte" aria-label="Quitar corte ${esc(k.hora)}">×</button></span>`).join('');
+  if(!cs.length){el.innerHTML='<div class="empty">Aún no hay cortes. Captura los números y toca <b>Guardar corte</b> para ir viendo cómo avanza el día.</div>';return;}
+  const W=Math.max(300,el.clientWidth),H=270,L=40,R=16,T=18,B=30;
+  const all=cs.flatMap(k=>SER.map(x=>k[x.k])).filter(v=>v!=null);
+  const ymax=Math.max(110,Math.ceil((Math.max(...all)+5)/10)*10),ymin=Math.max(0,Math.floor((Math.min(...all,s.lo)-10)/10)*10);
+  const px=i=>cs.length===1?(L+W-R)/2:L+(W-L-R)*i/(cs.length-1);
+  const py=v=>T+(H-T-B)*(1-(v-ymin)/(ymax-ymin));
+  let g='';
+  for(let v=ymin;v<=ymax;v+=10) g+=`<line x1="${L}" x2="${W-R}" y1="${py(v)}" y2="${py(v)}" stroke="var(--grid)"/><text x="${L-6}" y="${py(v)+4}" text-anchor="end">${v}%</text>`;
+  const hiY=py(Math.min(s.hi,ymax));
+  g+=`<rect x="${L}" y="${hiY}" width="${W-L-R}" height="${py(s.lo)-hiY}" style="fill:var(--band)"/><line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" stroke="var(--axis)"/>`;
+  cs.forEach((k,i)=>g+=`<text x="${px(i)}" y="${H-10}" text-anchor="middle">${esc(k.hora)}</text>`);
+  let lines='',dots='';
+  SER.slice().reverse().forEach(x=>{
+    const pts=cs.map((k,i)=>k[x.k]==null?null:[px(i),py(k[x.k])]);
+    let d='',pen=false;pts.forEach(p=>{if(!p){pen=false;return;}d+=(pen?'L':'M')+p[0]+','+p[1];pen=true;});
+    lines+=`<path d="${d}" fill="none" style="stroke:var(${x.css})" stroke-width="${x.w}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    pts.forEach(p=>{if(p)dots+=`<circle cx="${p[0]}" cy="${p[1]}" r="${x.k==='Cadena'?5:4}" style="fill:var(${x.css});stroke:var(--surface)" stroke-width="2"/>`;});
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Evolución de la adherencia por corte">${g}${lines}${dots}<line id="xh" y1="${T}" y2="${H-B}" stroke="var(--axis)" style="display:none"/><rect id="ov" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent"/></svg>`;
+  const ov=el.querySelector('#ov'),xh=el.querySelector('#xh');
+  ov.addEventListener('mousemove',e=>{
+    const r=ov.getBoundingClientRect(),rel=(e.clientX-r.left)/r.width;
+    let i=cs.length===1?0:Math.round(rel*(cs.length-1));i=Math.max(0,Math.min(cs.length-1,i));
+    xh.setAttribute('x1',px(i));xh.setAttribute('x2',px(i));xh.style.display='';
+    const k=cs[i];
+    showTip(e,`<b>Corte ${esc(k.hora)}</b>`+SER.map(x=>`<div class="r"><span><i class="sw" style="background:var(${x.css});margin-right:6px"></i>${x.k}</span><span>${fmtP(k[x.k])}</span></div>`).join(''));
+  });
+  ov.addEventListener('mouseleave',()=>{hideTip();xh.style.display='none';});
+}
+
+/* ---------- ciclo de render ---------- */
+function drawCharts(){renderNodes(C);renderMix(C);renderTrend();}
+function update(){
+  C=calc(state);
+  const d=new Date(state.fecha+'T12:00:00');
+  $('#fechaTxt').textContent=isNaN(d)?'':d.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  renderKpis(C);drawCharts();updateTable(C);save();
+}
+function syncParams(){$('#pFecha').value=state.fecha;$('#pHora').value=state.hora;$('#pLo').value=state.lo;$('#pHi').value=state.hi;}
+function full(){syncParams();renderTable();update();}
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>t.style.display='none',2400);}
+
+/* ---------- eventos ---------- */
+$('#pFecha').addEventListener('input',e=>{
+  const v=e.target.value; if(!v||v===state.fecha) return;
+  const keep={lo:state.lo,hi:state.hi};
+  state=loadLocal(v)||Object.assign(blankState(),keep,{fecha:v});
+  if(SHARED) synced=false;
+  full();pull();
+});
+$('#pHora').addEventListener('input',e=>{state.hora=e.target.value||state.hora;update();});
+function bandInput(key,id){
+  const el=$(id);
+  el.addEventListener('input',e=>{const v=parseNum(e.target.value);
+    const lo=key==='lo'?v:state.lo,hi=key==='hi'?v:state.hi;
+    if(v!=null&&lo>0&&hi>lo){state[key]=v;update();}});          // solo aplica valores válidos (mín < máx)
+  el.addEventListener('blur',()=>{el.value=state[key];});        // si quedó inválido, vuelve al último valor bueno
+}
+bandInput('lo','#pLo');bandInput('hi','#pHi');
+
+function setPath(p,v){
+  const a=p.split('.');
+  if(a[0]==='cadenaPron') state.cadenaPron=v;
+  else state[a[0]][a[1]]=v;
+}
+const tbl=$('#tbl');
+tbl.addEventListener('input',e=>{const t=e.target;if(t.dataset.p){setPath(t.dataset.p,parseNum(t.value));update();}});
+tbl.addEventListener('focusout',e=>{const t=e.target;if(t.dataset&&t.dataset.p){const v=parseNum(t.value);t.value=v==null?'':nf.format(v);}});
+$('#cortes').addEventListener('click',e=>{const b=e.target.closest('[data-delc]');if(b){state.cortes=state.cortes.filter(k=>k.hora!==b.dataset.delc);update();}});
+
+$('#btnCorte').addEventListener('click',()=>{
+  if(C.Cadena.adh==null){toast('Primero captura pronóstico y real');return;}
+  const k=corteFrom(state,C);state.cortes=state.cortes.filter(x=>x.hora!==k.hora).concat([k]);update();toast('Corte '+k.hora+' guardado');
+});
+let armed=null;
+$('#btnBlank').addEventListener('click',()=>{
+  const b=$('#btnBlank');
+  if(!armed){b.textContent=SHARED?'¿Seguro? Borra para todos':'¿Seguro? Toca otra vez';armed=setTimeout(()=>{armed=null;b.textContent='Reiniciar día';},4000);return;}
+  clearTimeout(armed);armed=null;b.textContent='Reiniciar día';
+  const keep={lo:state.lo,hi:state.hi,fecha:state.fecha};
+  state=Object.assign(blankState(),keep);full();toast('Día reiniciado');
+});
+$('#btnCopy').addEventListener('click',async()=>{
+  const c=C,s=state;
+  const L=[`Consumo de adherencia Black Friday · ${$('#fechaTxt').textContent} · corte ${s.hora}`,
+    `Cadena: ${fmtP(c.Cadena.adh)} del pronóstico (real ${fmtN(c.Cadena.real)} de ${fmtN(c.Cadena.pron)}) · ${faltaTxt(c.Cadena)}`];
+  NODES.forEach(n=>{const a=c.nodes[n.k];L.push(`${n.k}: ${fmtP(a.adh)} (real ${fmtN(a.real)} de ${fmtN(a.pron)}) · ${faltaTxt(a)}`);});
+  const txt=L.join('\n');
+  try{await navigator.clipboard.writeText(txt);toast('Resumen copiado');}
+  catch(err){toast('No pude copiar; tu navegador lo bloqueó');}
+});
+
+/* tema */
+function themePref(){try{return localStorage.getItem('adh-bf-theme')||'light';}catch(e){return 'light';}}
+function applyTheme(){
+  const p=themePref(),dark=p==='dark'||(p==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme=dark?'dark':'light';
+  $('#btnTheme').textContent='Tema: '+({auto:'auto',light:'gris claro',dark:'índigo'}[p]);
+}
+$('#btnTheme').addEventListener('click',()=>{
+  const nx={auto:'light',light:'dark',dark:'auto'}[themePref()];
+  try{localStorage.setItem('adh-bf-theme',nx);}catch(e){}
+  applyTheme();
+});
+let rt;new ResizeObserver(()=>{clearTimeout(rt);rt=setTimeout(()=>{if(C)drawCharts();},80);}).observe(document.querySelector('.wrap'));
+
+state=loadLocal(EVENT_DATE)||blankState();
+if(SHARED){setInterval(pull,4000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull();});}
+applyTheme();full();renderSync();if(SHARED)pull();
+</script>
+</body>
+</html>
